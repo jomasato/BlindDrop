@@ -1,0 +1,89 @@
+﻿node.exe : [1m[31mDeclara
+tionError:[39m[22m Functi
+on "mcopy" not found.
+発生場所 C:\Program Files\nodej
+s\npx.ps1:29 文字:3
++   & $NODE_EXE $NPX_CLI_JS
+ $args
++   ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+    + CategoryInfo         
+     : NotSpecified: ([1  
+  m[31mDeclar...opy" no   
+ t found.:String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+  --> @openzeppelin/contrac
+ts/utils/Bytes.sol:94:13:
+   |
+94 |             mcopy(add(
+result, 0x20), add(add(buff
+er, 0x20), start), sub(end,
+ start))
+   |             ^^^^^
+
+
+[1m[31mDeclarationError:
+[39m[22m Function "mcopy" 
+not found.
+   --> @openzeppelin/contra
+cts/utils/Bytes.sol:124:13:
+    |
+124 |             mcopy(add
+(buffer, 0x20), add(add(buf
+fer, 0x20), start), sub(end
+, start))
+    |             ^^^^^
+
+
+[1m[31mDeclarationError:
+[39m[22m Function "mcopy" 
+not found.
+   --> @openzeppelin/contra
+cts/utils/Bytes.sol:168:13:
+    |
+168 |             mcopy(add
+(add(buffer, 0x20), pos), a
+dd(add(replacement, 0x20), 
+offset), length)
+    |             ^^^^^
+
+
+[1m[31mDeclarationError:
+[39m[22m Function "mcopy" 
+not found.
+   --> @openzeppelin/contra
+cts/utils/Bytes.sol:195:17:
+    |
+195 |                 mcopy
+(add(result, offset), add(i
+nput, 0x20), mload(input))
+    |                 ^^^^^
+
+
+[1m[31mTypeError:[39m[2
+2m Member "random" not foun
+d or not visible after argu
+ment-dependent lookup in ty
+pe(library FHE).
+  --> contracts/BlindDrop.s
+ol:52:46:
+   |
+52 |         euint64 random
+Jitter = FHE.asEuint64(FHE.
+random());
+   |                       
+                       ^^^^
+^^^^^^
+
+
+[31m[1mError[22m[39m [
+31m[1mHH600:[22m[39m Com
+pilation failed
+
+For more info go to https:/
+/v2.hardhat.org/HH600 or ru
+n Hardhat with --show-stack
+-traces
