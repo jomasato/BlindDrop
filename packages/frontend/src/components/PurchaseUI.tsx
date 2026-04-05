@@ -27,17 +27,17 @@ const MOCK_ITEMS = [
 
 export function PurchaseUI() {
     const [view, setView] = useState<'dashboard' | 'detail' | 'feedback'>('dashboard');
-    const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [selectedItem, setSelectedItem] = useState<typeof MOCK_ITEMS[0] | null>(null);
 
-    const [buffer, setBuffer] = useState<number>(15);
+    const [buffer] = useState<number>(15);
     const [showPreMintModal, setShowPreMintModal] = useState(false);
     const [showSignModal, setShowSignModal] = useState(false);
     const [agreeToSign, setAgreeToSign] = useState(false);
 
     // Mock User Balance
-    const [encryptedBalance, setEncryptedBalance] = useState("0.25 ETH (Encrypted)");
+    const [encryptedBalance] = useState("0.25 ETH (Encrypted)");
 
-    const handleSelectItem = (item: any) => {
+    const handleSelectItem = (item: typeof MOCK_ITEMS[0]) => {
         setSelectedItem(item);
         setView('detail');
     };
@@ -55,7 +55,7 @@ export function PurchaseUI() {
         if (!agreeToSign) return;
         setShowSignModal(false);
         // Execute mock Tx
-        console.log(`Executing attemptPurchase for itemId: ${selectedItem.id} with buffer ${buffer}%`);
+        console.log(`Executing attemptPurchase for itemId: ${selectedItem?.id} with buffer ${buffer}%`);
         setView('feedback');
     };
 
@@ -134,7 +134,8 @@ export function PurchaseUI() {
         );
     }
 
-    // 2. Detail View
+    if (!selectedItem) return null;
+
     return (
         <div className="p-6 max-w-4xl mx-auto space-y-8 text-gray-200">
             <button onClick={() => setView('dashboard')} className="text-gray-500 hover:text-white mb-4 flex items-center gap-2 text-sm uppercase tracking-widest transition-colors">

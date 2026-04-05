@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Shield, Activity, Database, Terminal, Zap, Clock, Cpu, Lock, AlertTriangle, ArrowRight, ShieldAlert } from 'lucide-react';
+import { Shield, Activity, Database, Terminal, Zap, Clock, Cpu, Lock, ArrowRight, ShieldAlert } from 'lucide-react';
 
 export function KeeperTerminal() {
     const [blockHeight, setBlockHeight] = useState(14820934);
