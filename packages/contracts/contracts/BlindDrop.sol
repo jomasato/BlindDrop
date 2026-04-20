@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.25;
 
 import "@fhenixprotocol/contracts/FHE.sol";
 import "@fhenixprotocol/contracts/access/Permissioned.sol";
@@ -105,7 +105,7 @@ contract BlindDrop is Permissioned {
 
     // Returns the caller's balance sealed for their public key.
     // Must pass a valid permission signed by msg.sender.
-    function getEncryptedBalance(Permission memory permission) public view onlySender(permission) returns (bytes memory) {
+    function getEncryptedBalance(Permission memory permission) public view onlySender(permission) returns (string memory) {
         return FHE.sealoutput(_encryptedBalances[msg.sender], permission.publicKey);
     }
 }

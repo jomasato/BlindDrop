@@ -1,57 +1,97 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, Activity, Database, Terminal, Zap, Clock, Cpu, Lock, ArrowRight, ShieldAlert } from 'lucide-react';
+import { useBlindDrop, itemIdFromString } from '@/hooks/useBlindDrop';
+import { BrowserProvider } from 'ethers';
+
+// Default to first item; in production this would be selectable
+const ITEM_ID = itemIdFromString("shadow-sniper-pass");
+
+const cipherInventory = "0x7f8c92b45a...!e2@f8#c9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5";
+const cipherPrice = "0x8b4a2c1f9d...!g3@k1#m4n5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2a3b4c5d6e7f8";
 
 export function KeeperTerminal() {
-    const [blockHeight, setBlockHeight] = useState(14820934);
-    const [spamPool, setSpamPool] = useState(1.4500);
-    const [lastDecay, setLastDecay] = useState(145);
-    const [decayReward, setDecayReward] = useState(0.0035);
-    const gasCost = 0.0050;
-    const [revealCooldown, setRevealCooldown] = useState(12);
+    const [blockHeight, setBlockHeight] = useState<number | null>(null);
+    const [spamPool, setSpamPool] = useState<string | null>(null);
+    const [lastDecay, setLastDecay] = useState(0);
+    const [decayReward, setDecayReward] = useState(0);
+    const [revealCooldown, setRevealCooldown] = useState(0);
     const [logs, setLogs] = useState<string[]>([
-        "[0xa1b2c3d4] INITIALIZED FheOS KEEPER TERMINAL v1.0.0",
-        "[SYSTEM] Connecting to Fhenix Helium Testnet... SUCCESS"
+        "[SYSTEM] Initializing FheOS Keeper Terminal v1.0.0",
+        "[SYSTEM] Connecting to Fhenix Helium Testnet...",
     ]);
 
-    // Ciphertext mocks
-    const cipherInventory = "0x7f8c92b45a...!e2@f8#c9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5";
-    const cipherPrice = "0x8b4a2c1f9d...!g3@k1#m4n5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2a3b4c5d6e7f8";
+    const { loading, error, decayPrice, requestPriceReveal, getSpamFee } = useBlindDrop();
+    const gasCost = 0.005;
 
+    const addLog = useCallback((msg: string) => {
+        const hash = "0x" + Array.from({ length: 8 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+        setLogs(prev => [`[${hash}] ${msg}`, ...prev].slice(0, 30));
+    }, []);
+
+    // Poll block height and contract state
     useEffect(() => {
+        const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+        if (!window.ethereum || !CONTRACT_ADDRESS) {
+            addLog("[WARN] MetaMask not found or contract address not set");
+            return;
+        }
+
+        const provider = new BrowserProvider(window.ethereum);
+
+        const pollBlock = async () => {
+            try {
+                const block = await provider.getBlockNumber();
+                setBlockHeight(block);
+                const balance = await provider.getBalance(CONTRACT_ADDRESS);
+                setSpamPool(parseFloat((Number(balance) / 1e18).toFixed(4)).toString());
+            } catch {
+                // ignore polling errors
+            }
+        };
+
+        pollBlock();
         const timer = setInterval(() => {
-            if (Math.random() > 0.6) setBlockHeight(prev => prev + 1);
+            pollBlock();
+            setLastDecay(prev => prev + 3);
+            setDecayReward(prev => parseFloat((prev + 0.0001).toFixed(4)));
+            setRevealCooldown(prev => Math.max(0, prev - 3));
 
             if (Math.random() > 0.8) {
-                setSpamPool(prev => prev + 0.01);
-                const hash = "0x" + Array.from({ length: 8 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-                const newLog = `[${hash}] attemptPurchase() - Input: Encrypted - Fee Paid: 0.01 ETH`;
-                setLogs(prev => [newLog, ...prev].slice(0, 30));
+                addLog("attemptPurchase() - Input: Encrypted - Fee Paid: 0.01 ETH");
             }
+        }, 3000);
 
-            setLastDecay(prev => prev + 1);
-            setDecayReward(prev => prev + 0.0001);
-            setRevealCooldown(prev => Math.max(0, prev - 1));
-        }, 1000);
+        addLog("[SYSTEM] Connected to Fhenix Helium Testnet — SUCCESS");
         return () => clearInterval(timer);
-    }, []);
+    }, [addLog]);
 
     const roiPositive = decayReward > gasCost;
 
-    const handleDecay = () => {
-        if (!roiPositive) return;
-        setLastDecay(0);
-        setDecayReward(0);
-        const hash = "0x" + Array.from({ length: 8 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-        setLogs(prev => [`[${hash}] decayPrice() EXECUTE - Arbitrage Captured`, ...prev].slice(0, 30));
-    };
+    const handleDecay = useCallback(async () => {
+        if (!roiPositive || loading) return;
+        try {
+            addLog("decayPrice() EXECUTE — sending tx...");
+            await decayPrice(ITEM_ID);
+            setLastDecay(0);
+            setDecayReward(0);
+            addLog("decayPrice() CONFIRMED — Arbitrage Captured");
+        } catch (e) {
+            addLog(`decayPrice() FAILED — ${e instanceof Error ? e.message : 'unknown error'}`);
+        }
+    }, [roiPositive, loading, decayPrice, addLog]);
 
-    const handleReveal = () => {
-        if (revealCooldown > 0) return;
-        setRevealCooldown(300);
-        const hash = "0x" + Array.from({ length: 8 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-        setLogs(prev => [`[${hash}] requestPriceReveal() EXECUTE - Callback Initiated`, ...prev].slice(0, 30));
-    };
+    const handleReveal = useCallback(async () => {
+        if (revealCooldown > 0 || loading) return;
+        try {
+            addLog("requestPriceReveal() EXECUTE — sending tx...");
+            await requestPriceReveal(ITEM_ID);
+            setRevealCooldown(300);
+            addLog("requestPriceReveal() CONFIRMED — Callback Initiated");
+        } catch (e) {
+            addLog(`requestPriceReveal() FAILED — ${e instanceof Error ? e.message : 'unknown error'}`);
+        }
+    }, [revealCooldown, loading, requestPriceReveal, addLog]);
 
     return (
         <div className="min-h-screen bg-slate-950 text-emerald-500 font-mono p-6 selection:bg-emerald-900 selection:text-emerald-100">
@@ -70,13 +110,18 @@ export function KeeperTerminal() {
                             <Activity className="w-4 h-4 animate-pulse" />
                             <span className="text-sm uppercase tracking-widest">Fhenix Testnet (Helium)</span>
                         </div>
-                        <p className="text-sm">BLOCK: <span className="text-white font-bold">{blockHeight}</span></p>
+                        <p className="text-sm">BLOCK: <span className="text-white font-bold">{blockHeight ?? '...'}</span></p>
                     </div>
                 </header>
 
+                {error && (
+                    <div className="border border-red-700 bg-red-900/20 p-3 rounded text-red-400 text-sm">
+                        {error}
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                    {/* 1. Global Status & Pool */}
                     <div className="col-span-1 border border-emerald-900 bg-slate-900/50 p-6 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.05)] flex flex-col justify-between">
                         <div>
                             <h2 className="text-xs text-emerald-700 font-bold mb-4 flex items-center gap-2 uppercase tracking-widest">
@@ -96,12 +141,11 @@ export function KeeperTerminal() {
                         <div className="mt-8">
                             <p className="text-xs text-emerald-600 mb-1 uppercase tracking-widest">Spam Wall Rewards Pool</p>
                             <p className="text-4xl font-black text-amber-500 flex items-baseline gap-2">
-                                {spamPool.toFixed(4)} <span className="text-lg text-amber-500/50">ETH</span>
+                                {spamPool ?? '...'} <span className="text-lg text-amber-500/50">ETH</span>
                             </p>
                         </div>
                     </div>
 
-                    {/* 3. FHE Inventory Radar */}
                     <div className="col-span-1 md:col-span-2 border border-emerald-900 bg-slate-900/50 p-6 rounded-lg relative overflow-hidden">
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.03)_0%,transparent_100%)]" />
                         <h2 className="text-xs text-emerald-700 font-bold mb-6 flex items-center gap-2 uppercase tracking-widest relative z-10">
@@ -148,14 +192,12 @@ export function KeeperTerminal() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                    {/* 2. Keeper Operations */}
                     <div className="border border-emerald-900 bg-slate-900/50 p-6 rounded-lg">
                         <h2 className="text-xs text-emerald-700 font-bold mb-6 flex items-center gap-2 uppercase tracking-widest">
                             <Zap className="w-4 h-4" /> Keeper Operations
                         </h2>
 
                         <div className="space-y-6">
-                            {/* Decay Action */}
                             <div className="bg-black/50 border border-emerald-900/50 p-4 rounded-lg">
                                 <h3 className="text-sm text-white font-bold flex justify-between">
                                     decayPrice()
@@ -177,15 +219,14 @@ export function KeeperTerminal() {
 
                                 <button
                                     onClick={handleDecay}
-                                    disabled={!roiPositive}
-                                    className={`w-full mt-4 py-3 rounded text-sm font-bold flex items-center justify-center gap-2 transition-all ${roiPositive ? 'bg-emerald-600 text-black shadow-[0_0_15px_rgba(5,150,105,0.4)] hover:bg-emerald-500 cursor-pointer' : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'}`}
+                                    disabled={!roiPositive || loading}
+                                    className={`w-full mt-4 py-3 rounded text-sm font-bold flex items-center justify-center gap-2 transition-all ${roiPositive && !loading ? 'bg-emerald-600 text-black shadow-[0_0_15px_rgba(5,150,105,0.4)] hover:bg-emerald-500 cursor-pointer' : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'}`}
                                 >
-                                    {roiPositive ? 'EXECUTE ARBITRAGE' : 'ROI NEGATIVE'}
+                                    {loading ? 'EXECUTING...' : roiPositive ? 'EXECUTE ARBITRAGE' : 'ROI NEGATIVE'}
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             </div>
 
-                            {/* Reveal Action */}
                             <div className="bg-black/50 border border-emerald-900/50 p-4 rounded-lg">
                                 <h3 className="text-sm text-white font-bold flex justify-between">
                                     requestPriceReveal()
@@ -196,17 +237,16 @@ export function KeeperTerminal() {
 
                                 <button
                                     onClick={handleReveal}
-                                    disabled={revealCooldown > 0}
-                                    className={`w-full mt-4 py-3 rounded text-sm font-bold flex items-center justify-center gap-2 transition-all ${revealCooldown <= 0 ? 'bg-cyan-600 text-black shadow-[0_0_15px_rgba(8,145,178,0.4)] hover:bg-cyan-500 cursor-pointer' : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'}`}
+                                    disabled={revealCooldown > 0 || loading}
+                                    className={`w-full mt-4 py-3 rounded text-sm font-bold flex items-center justify-center gap-2 transition-all ${revealCooldown <= 0 && !loading ? 'bg-cyan-600 text-black shadow-[0_0_15px_rgba(8,145,178,0.4)] hover:bg-cyan-500 cursor-pointer' : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'}`}
                                 >
-                                    TRIGGER DELAYED ORACLE
+                                    {loading ? 'EXECUTING...' : 'TRIGGER DELAYED ORACLE'}
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* 4. Mempool Monitor */}
                     <div className="border border-emerald-900 bg-slate-900/50 p-6 rounded-lg flex flex-col">
                         <h2 className="text-xs text-emerald-700 font-bold mb-4 flex items-center gap-2 uppercase tracking-widest">
                             <ShieldAlert className="w-4 h-4" /> Mempool Monitor (Anti-Bot)
