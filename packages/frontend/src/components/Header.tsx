@@ -1,8 +1,56 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+
+declare global {
+    interface Window {
+        ethereum?: {
+            request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+            on: (event: string, handler: (...args: unknown[]) => void) => void;
+            removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
+        };
+    }
+}
 
 export function Header() {
-    const [connected, setConnected] = useState(false);
+    const [account, setAccount] = useState<string | null>(null);
+    const [connecting, setConnecting] = useState(false);
+
+    const handleAccountsChanged = useCallback((accounts: unknown) => {
+        const list = accounts as string[];
+        setAccount(list.length > 0 ? list[0] : null);
+    }, []);
+
+    useEffect(() => {
+        if (!window.ethereum) return;
+        window.ethereum.request({ method: 'eth_accounts' }).then((accounts) => {
+            const list = accounts as string[];
+            if (list.length > 0) setAccount(list[0]);
+        });
+        window.ethereum.on('accountsChanged', handleAccountsChanged);
+        return () => {
+            window.ethereum?.removeListener('accountsChanged', handleAccountsChanged);
+        };
+    }, [handleAccountsChanged]);
+
+    const connect = async () => {
+        if (!window.ethereum) {
+            alert('MetaMask is not installed.');
+            return;
+        }
+        setConnecting(true);
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as string[];
+            setAccount(accounts[0]);
+        } catch {
+            // user rejected
+        } finally {
+            setConnecting(false);
+        }
+    };
+
+    const disconnect = () => setAccount(null);
+
+    const short = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
     return (
         <header className="w-full border-b border-gray-800 bg-black/50 backdrop-blur-md sticky top-0 z-50 text-white">
@@ -13,11 +61,11 @@ export function Header() {
                 </div>
 
                 <div>
-                    {connected ? (
+                    {account ? (
                         <div className="flex items-center gap-4">
-                            <span className="text-sm text-green-400 font-mono">Connected: 0x1A2...9B3c</span>
+                            <span className="text-sm text-green-400 font-mono">Connected: {short(account)}</span>
                             <button
-                                onClick={() => setConnected(false)}
+                                onClick={disconnect}
                                 className="text-xs text-gray-500 hover:text-white transition-colors"
                             >
                                 Disconnect
@@ -25,10 +73,11 @@ export function Header() {
                         </div>
                     ) : (
                         <button
-                            onClick={() => setConnected(true)}
-                            className="bg-white text-black px-6 py-2 rounded-lg text-sm font-bold tracking-widest hover:bg-gray-200 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+                            onClick={connect}
+                            disabled={connecting}
+                            className="bg-white text-black px-6 py-2 rounded-lg text-sm font-bold tracking-widest hover:bg-gray-200 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.2)] disabled:opacity-50"
                         >
-                            CONNECT WALLET
+                            {connecting ? 'CONNECTING...' : 'CONNECT WALLET'}
                         </button>
                     )}
                 </div>

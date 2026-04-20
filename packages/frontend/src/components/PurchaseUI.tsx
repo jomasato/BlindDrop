@@ -29,7 +29,7 @@ export function PurchaseUI() {
     const [view, setView] = useState<'dashboard' | 'detail' | 'feedback'>('dashboard');
     const [selectedItem, setSelectedItem] = useState<typeof MOCK_ITEMS[0] | null>(null);
 
-    const [buffer] = useState<number>(15);
+    const [buffer, setBuffer] = useState<number>(15);
     const [showPreMintModal, setShowPreMintModal] = useState(false);
     const [showSignModal, setShowSignModal] = useState(false);
     const [agreeToSign, setAgreeToSign] = useState(false);
@@ -190,7 +190,7 @@ export function PurchaseUI() {
                     <div className="space-y-3">
                         <p className="text-sm font-semibold text-gray-300 uppercase tracking-widest">Select FHE Encrypted Limit Buffer</p>
                         <div className="grid grid-cols-1 gap-3">
-                            <label className={`cursor-pointer p-4 rounded-xl border transition-all flex justify-between items-center ${buffer === 5 ? 'border-blue-500 bg-blue-900/20' : 'border-gray-800 hover:border-gray-600 bg-gray-900'}`}>
+                            <label onClick={() => setBuffer(5)} className={`cursor-pointer p-4 rounded-xl border transition-all flex justify-between items-center ${buffer === 5 ? 'border-blue-500 bg-blue-900/20' : 'border-gray-800 hover:border-gray-600 bg-gray-900'}`}>
                                 <div className="flex items-center gap-4">
                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${buffer === 5 ? 'border-blue-500' : 'border-gray-600'}`}>
                                         {buffer === 5 && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
@@ -202,19 +202,19 @@ export function PurchaseUI() {
                                 </div>
                             </label>
 
-                            <label className={`cursor-pointer p-4 rounded-xl border transition-all flex justify-between items-center ${buffer === 15 ? 'border-green-500 bg-green-900/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'border-gray-800 hover:border-gray-600 bg-gray-900'}`}>
+                            <label onClick={() => setBuffer(15)} className={`cursor-pointer p-4 rounded-xl border transition-all flex justify-between items-center ${buffer === 15 ? 'border-green-500 bg-green-900/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'border-gray-800 hover:border-gray-600 bg-gray-900'}`}>
                                 <div className="flex items-center gap-4">
                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${buffer === 15 ? 'border-green-500' : 'border-gray-600'}`}>
                                         {buffer === 15 && <div className="w-2.5 h-2.5 rounded-full bg-green-500" />}
                                     </div>
                                     <div>
                                         <p className="font-bold text-white tracking-widest text-lg">+15% Balanced</p>
-                                        <p className="text-xs text-green-400 mt-0.5 font-bold uppercase tracking-wider">🌟 Recommended</p>
+                                        <p className="text-xs text-green-400 mt-0.5 font-bold uppercase tracking-wider">Recommended</p>
                                     </div>
                                 </div>
                             </label>
 
-                            <label className={`cursor-pointer p-4 rounded-xl border transition-all flex justify-between items-center ${buffer === 30 ? 'border-red-500 bg-red-900/20' : 'border-gray-800 hover:border-gray-600 bg-gray-900'}`}>
+                            <label onClick={() => setBuffer(30)} className={`cursor-pointer p-4 rounded-xl border transition-all flex justify-between items-center ${buffer === 30 ? 'border-red-500 bg-red-900/20' : 'border-gray-800 hover:border-gray-600 bg-gray-900'}`}>
                                 <div className="flex items-center gap-4">
                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${buffer === 30 ? 'border-red-500' : 'border-gray-600'}`}>
                                         {buffer === 30 && <div className="w-2.5 h-2.5 rounded-full bg-red-500" />}

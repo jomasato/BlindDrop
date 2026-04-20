@@ -19,6 +19,8 @@ contract BlindDrop is Permissioned {
 
     // Initialize an item with stock and price
     function initializeItem(bytes32 itemId, uint32 initialStock, uint64 initialPrice) public {
+        require(initialStock > 0, "Stock must be greater than zero");
+        require(initialPrice > 0, "Price must be greater than zero");
         itemInventory[itemId] = FHE.asEuint32(initialStock);
         itemCurrentPrice[itemId] = FHE.asEuint64(initialPrice);
         lastDecayTimes[itemId] = block.timestamp;
@@ -101,8 +103,9 @@ contract BlindDrop is Permissioned {
         }
     }
 
-    // Helper for revealing user balance
-    function getEncryptedBalance(Permission memory permission) public view returns (uint64) {
-        return FHE.decrypt(_encryptedBalances[msg.sender]);
+    // Returns the caller's balance sealed for their public key.
+    // Must pass a valid permission signed by msg.sender.
+    function getEncryptedBalance(Permission memory permission) public view onlySender(permission) returns (bytes memory) {
+        return FHE.sealoutput(_encryptedBalances[msg.sender], permission.publicKey);
     }
 }
