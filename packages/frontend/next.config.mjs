@@ -1,11 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     allowedDevOrigins: ['192.168.10.115'],
-    // fhenixjs uses WASM (tfhe-rs) which requires asyncWebAssembly support.
-    // Turbopack does not support WASM modules yet, so we fall back to webpack for builds.
-    turbopack: {
-        resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'],
-    },
+    // fhenixjs uses WASM (tfhe-rs). asyncWebAssembly enables webpack to handle it.
+    // The turbopack key is intentionally omitted — its presence enables Turbopack,
+    // which cannot handle WASM modules. webpack is used for production builds.
     webpack: (config) => {
         config.experiments = {
             ...config.experiments,
