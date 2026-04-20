@@ -1,32 +1,37 @@
 "use client";
 import { useState, useCallback, useRef } from 'react';
 import { BrowserProvider } from 'ethers';
-import { FhenixClient, getPermit } from 'fhenixjs';
 
-// Wraps fhenixjs to provide FHE encryption and permit management.
-// Must be called after MetaMask is connected.
+// fhenixjs is imported dynamically to prevent WASM from being bundled at SSR/build time.
+// Turbopack and most SSR bundlers cannot resolve WASM modules statically.
+
+type FhenixClientType = {
+    encrypt_uint64: (value: bigint) => Promise<{ data: Uint8Array; securityZone: number }>;
+};
 
 export function useFhenix() {
-    const clientRef = useRef<FhenixClient | null>(null);
+    const clientRef = useRef<FhenixClientType | null>(null);
     const [ready, setReady] = useState(false);
 
     const init = useCallback(async () => {
+        if (clientRef.current) return;
         if (!window.ethereum) throw new Error("MetaMask not found");
         const provider = new BrowserProvider(window.ethereum);
-        clientRef.current = new FhenixClient({ provider });
+        // Dynamic import keeps WASM out of the SSR bundle
+        const { FhenixClient } = await import('fhenixjs');
+        clientRef.current = new FhenixClient({ provider }) as FhenixClientType;
         setReady(true);
     }, []);
 
-    // Encrypts a uint64 limit order value for use in attemptPurchase
     const encryptLimitOrder = useCallback(async (value: bigint) => {
-        if (!clientRef.current) throw new Error("FhenixClient not initialised — call init() first");
-        return clientRef.current.encrypt_uint64(value);
-    }, []);
+        if (!clientRef.current) await init();
+        return clientRef.current!.encrypt_uint64(value);
+    }, [init]);
 
-    // Generates a permit for getEncryptedBalance
     const getBalancePermit = useCallback(async (contractAddress: string) => {
         if (!window.ethereum) throw new Error("MetaMask not found");
         const provider = new BrowserProvider(window.ethereum);
+        const { getPermit } = await import('fhenixjs');
         return getPermit(contractAddress, provider);
     }, []);
 
